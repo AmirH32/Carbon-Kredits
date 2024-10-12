@@ -1,5 +1,5 @@
 from stellar_sdk import Server, Keypair, Network, TransactionBuilder, Asset, Operation
-
+from stellar_sdk.operation import Payment 
 # Define issuer and distribution keypairs using the provided public and secret keys
 issuing_keypair = Keypair.from_secret("SAU7KGZXJZEYHB22CKF2ADP7BPLLJZRYP4Z43CWBABHTBRQI54KMVEGD")
 distribution_keypair = Keypair.from_secret("SDYMPYU6IKFHKDKKVQJ6SAUYNP6OIBBU7GNFVUOHQCNPSJBT6MNGDHHA")
@@ -38,7 +38,7 @@ trust_transaction = TransactionBuilder(
 trust_transaction.sign(distribution_keypair)
 try:
     response = server.submit_transaction(trust_transaction)
-    print("Trustline created:", response)
+    print("Trustline created:")
 except:
     print("Error creating trustline:", e)
 
@@ -55,7 +55,7 @@ try:
     # Sign and submit the transaction
     manage_data_transaction.sign(issuing_keypair)
     response = server.submit_transaction(manage_data_transaction)
-    print("Data added to issuing account:", response)
+    print("Data added to issuing account")
 except Exception as e:
     print("Error adding data to issuing account:", e)
 
@@ -69,10 +69,10 @@ try:
         network_passphrase=Network.TESTNET_NETWORK_PASSPHRASE,
         base_fee=100  # Base fee in stroops
     ).append_operation(
-        Operation.payment(
+        Payment(
             destination=distribution_keypair.public_key,
             asset=carbon_token,
-            amount="1000"  # Mint 1000 CARBON tokens
+            amount="9000"  # Mint 1000 CARBON tokens
         )
     ).set_timeout(30).build()
 
@@ -81,14 +81,12 @@ try:
 
     # Submit the transaction to the Stellar network
     response = server.submit_transaction(mint_transaction)
-    print("CARBON tokens minted and distributed:", response)
-except NotFoundError:
-    print("Issuing account not found.")
+    print("CARBON tokens minted and distributed")
 except Exception as e:
     print("Error minting tokens:", e)
 
 # Optional LOCKING ACCOUNTS (Commented out to avoid premature execution)
-# lock_transaction = TransactionBuilder(
+# lock_transaction = TransactionBuilder(s
 #     source_account=issuing_account,
 #     network_passphrase=Network.TESTNET_NETWORK_PASSPHRASE,
 #     base_fee=100  # Base fee in stroops
