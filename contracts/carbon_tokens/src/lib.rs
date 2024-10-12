@@ -1,81 +1,124 @@
-#![no_std]  // We're using no_std since this is a Wasm contract
-extern crate soroban_sdk;  // Import Soroban SDK
+#![no_std]
 
-use soroban_sdk::{contractimpl, Env, Address, Symbol, Vec, Bytes, IntoVal};
+use soroban_sdk::{contract, contractimpl, contracttype, token, unwrap::UnwrapOptimized, Address, Env, Symbol};
 
-// Data storage for our contract
-struct CarbonCreditContract;
-
-// Structure for Project Approval
 #[derive(Clone)]
-struct Project {
-    approved: bool,
+#[contracttype]
+pub enum DataKey {
+    ContractData,
 }
 
-// Token for Carbon Credits
+#[derive(Clone)]
+#[contracttype]
+pub struct ContractData {
+    pub buyer: Address,
+    pub price_per_token: u32,
+    pub total_value: i128, // Total number of tokens required
+    pub assigned_tokens: i128, // Number of tokens already assigned
+}
+
+#[contract]
+pub struct CarbonKreditContract;
+
 #[contractimpl]
-impl CarbonCreditContract {
-    
-    // Mint carbon credits, only by approved projects
-    pub fn mint(env: Env, project: Address, amount: i128) {
-        // Ensure project is approved before allowing minting
-        assert_eq!(
-            Self::is_approved_project(&env, &project),
-            true,
-            "Project not approved"
+impl CarbonKreditContract {
+
+    // Event name constants for emitting blockchain events
+    const EVENT_CONTRACT_CREATED: Symbol = Symbol::short("ContractCreated");
+    const EVENT_TOKENS_ASSIGNED: Symbol = Symbol::short("TokensAssigned");
+
+    // Creates a contract initiated by the buyer (carbon-positive company)
+    pub fn create(
+        e: Env,
+        buyer: Address,
+        price_per_token: u32,
+        total_value: i128,
+    ) {
+        if e.storage().instance().has(&DataKey::ContractData) {
+            panic!("Contract already exists");
+        }
+        if price_per_token == 0 || total_value <= 0 {
+            panic!("Invalid price or total value");
+        }
+
+        // Authorize the buyer
+        buyer.require_auth();
+
+        let contract_data = ContractData {
+            buyer: buyer.clone(),
+            price_per_token,
+            total_value,
+            assigned_tokens: 0,
+        };
+
+        // Store the contract data in the contract's state
+        write_contract_data(&e, &contract_data);
+
+        // Emit event: Contract created
+        e.events().publish(
+            (Self::EVENT_CONTRACT_CREATED,),
+            (buyer, price_per_token, total_value),
         );
-        
-        // Mint tokens (carbon credits) to the project
-        env.storage().increment(&project, amount);
     }
 
-    // Transfer carbon credits between users
-    pub fn transfer(env: Env, from: Address, to: Address, amount: i128) {
-        // Ensure sender has enough balance
-        let balance = env.storage().get::<i128>(&from).unwrap_or(0);
-        assert!(balance >= amount, "Insufficient balance");
+    // Allows the seller (carbon-negative company) to assign tokens to the contract and retire them
+    pub fn assign_tokens(
+        e: Env,
+        seller: Address,
+        token: Address,
+        token_amount: i128,
+    ) {
+        // Load the current contract data
+        let mut contract_data = load_contract_data(&e);
 
-        // Deduct from sender's balance
-        env.storage().set(&from, balance - amount);
+        if token_amount <= 0 {
+            panic!("Token amount must be greater than zero");
+        }
 
-        // Credit to receiver
-        let receiver_balance = env.storage().get::<i128>(&to).unwrap_or(0);
-        env.storage().set(&to, receiver_balance + amount);
+        // Authorize the seller to assign tokens
+        seller.require_auth();
+
+        // Prepare the token client and perform the token transfer
+        let token_client = token::Client::new(&e, &token);
+
+        // Burn the tokens from the seller to retire them
+        // Assuming the token has a burn function to retire tokens permanently
+        token_client.burn(&seller, &token_amount);
+
+        // Update the assigned token amount
+        contract_data.assigned_tokens += token_amount;
+        let outstanding_tokens = contract_data.total_value - contract_data.assigned_tokens;
+
+        // Store the updated contract data
+        write_contract_data(&e, &contract_data);
+
+        // Emit event: Tokens assigned and the outstanding balance
+        e.events().publish(
+            (Self::EVENT_TOKENS_ASSIGNED,),
+            (seller, token_amount, outstanding_tokens),
+        );
+
+        // Optionally check if the contract has been fulfilled
+        if outstanding_tokens <= 0 {
+            // All tokens have been assigned, the contract is fulfilled
+            // Handle fulfillment logic if needed (e.g., notify buyer, issue rewards, etc.)
+        }
     }
 
-    // Retire carbon credits (burning tokens)
-    pub fn retire(env: Env, from: Address, amount: i128) {
-        // Ensure the sender has enough tokens to burn
-        let balance = env.storage().get::<i128>(&from).unwrap_or(0);
-        assert!(balance >= amount, "Insufficient balance to retire");
-
-        // Burn tokens (remove them from circulation)
-        env.storage().set(&from, balance - amount);
-    }
-
-    // Approve a project to mint credits (only admin can call)
-    pub fn approve_project(env: Env, admin: Address, project: Address) {
-        // Check if admin is authorized (you can add your custom admin check logic)
-        assert!(admin == env.current_contract_address(), "Unauthorized");
-
-        // Approve the project
-        let project_data = Project { approved: true };
-        env.storage().set(&project, project_data);
-    }
-
-    // Revoke a project approval (only admin can call)
-    pub fn revoke_project(env: Env, admin: Address, project: Address) {
-        // Check if admin is authorized
-        assert!(admin == env.current_contract_address(), "Unauthorized");
-
-        // Revoke project approval
-        let project_data = Project { approved: false };
-        env.storage().set(&project, project_data);
-    }
-
-    // Check if a project is approved (internal function)
-    fn is_approved_project(env: &Env, project: &Address) -> bool {
-        let project_data: Option<Project> = env.storage().get(project);
-        project_data.map_or(false, |p| p.approved)
+    // Returns the current contract data
+    pub fn get_contract_data(e: Env) -> ContractData {
+        load_contract_data(&e)
     }
 }
+
+// Helper function to load contract data from storage
+fn load_contract_data(e: &Env) -> ContractData {
+    e.storage().instance().get(&DataKey::ContractData).unwrap()
+}
+
+// Helper function to write contract data to storage
+fn write_contract_data(e: &Env, contract_data: &ContractData) {
+    e.storage().instance().set(&DataKey::ContractData, contract_data);
+}
+
+mod test;
