@@ -1,22 +1,4 @@
 #![no_std]
-
-use soroban_sdk::{contract, contractimpl, contracttype, token, unwrap::UnwrapOptimized, Address, Env, Symbol};
-
-#[derive(Clone)]
-#[contracttype]
-pub enum DataKey {
-    ContractData,
-}
-
-#[derive(Clone)]
-#[contracttype]
-pub struct ContractData {
-    pub buyer: Address,
-    pub price_per_token: u32,
-    pub total_value: i128, // Total number of tokens required
-    pub assigned_tokens: i128, // Number of tokens already assigned
-}
-
 #[contract]
 pub struct CarbonKreditContract;
 
