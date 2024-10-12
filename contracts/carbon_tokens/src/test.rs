@@ -17,10 +17,10 @@ mod test {
         let total_value = 100;
 
         // Call the create function
-        CarbonKreditContract::create(e.clone(), buyer.clone(), price_per_token, total_value);
+        CarbonCreditContract::create(e.clone(), buyer.clone(), price_per_token, total_value);
 
         // Verify the contract data has been saved correctly
-        let contract_data = CarbonKreditContract::get_contract_data(e.clone());
+        let contract_data = CarbonCreditContract::get_contract_data(e.clone());
         assert_eq!(contract_data.buyer, buyer);
         assert_eq!(contract_data.price_per_token, price_per_token);
         assert_eq!(contract_data.total_value, total_value);
@@ -49,7 +49,7 @@ mod test {
         let total_value = 100;
 
         // Create contract by the buyer
-        CarbonKreditContract::create(e.clone(), buyer.clone(), price_per_token, total_value);
+        CarbonCreditContract::create(e.clone(), buyer.clone(), price_per_token, total_value);
 
         // Assume token has been set up; using the address as token identifier
         let token_address = TestAddress::random(&e);
@@ -58,10 +58,10 @@ mod test {
         let initial_token_amount = 50;
 
         // Assign tokens (simulate burning or retiring)
-        CarbonKreditContract::assign_tokens(e.clone(), seller.clone(), token_address.clone(), initial_token_amount);
+        CarbonCreditContract::assign_tokens(e.clone(), seller.clone(), token_address.clone(), initial_token_amount);
 
         // Verify the contract data is updated correctly
-        let contract_data = CarbonKreditContract::get_contract_data(e.clone());
+        let contract_data = CarbonCreditContract::get_contract_data(e.clone());
         assert_eq!(contract_data.assigned_tokens, initial_token_amount);
         assert_eq!(contract_data.total_value - contract_data.assigned_tokens, 50); // Outstanding tokens
 
@@ -90,7 +90,7 @@ mod test {
         let total_value = 100;
 
         // Create contract by the buyer
-        CarbonKreditContract::create(e.clone(), buyer.clone(), price_per_token, total_value);
+        CarbonCreditContract::create(e.clone(), buyer.clone(), price_per_token, total_value);
 
         // Assume token has been set up; using the address as token identifier
         let token_address = TestAddress::random(&e);
@@ -99,10 +99,10 @@ mod test {
         let token_amount = 100; // Full amount
 
         // Assign tokens and burn them all
-        CarbonKreditContract::assign_tokens(e.clone(), seller.clone(), token_address.clone(), token_amount);
+        CarbonCreditContract::assign_tokens(e.clone(), seller.clone(), token_address.clone(), token_amount);
 
         // Verify the contract data is updated correctly
-        let contract_data = CarbonKreditContract::get_contract_data(e.clone());
+        let contract_data = CarbonCreditContract::get_contract_data(e.clone());
         assert_eq!(contract_data.assigned_tokens, total_value);
         assert_eq!(contract_data.total_value - contract_data.assigned_tokens, 0); // Fully assigned
 
