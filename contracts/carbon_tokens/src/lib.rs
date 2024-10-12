@@ -1,6 +1,6 @@
 #![no_std]
 use soroban_sdk::{contract, contractimpl, vec, Env, String, Vec};
-
+// Floats and floating point math are not supported.
 #[contract]
 pub struct CarbonTokenContract;
 
