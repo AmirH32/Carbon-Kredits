@@ -27,7 +27,7 @@ except Exception as e:
     print("Distribution account not found. Please create and fund it using the faucet.")
     exit()
 
-# Create a trustline from distribution account to issuing account
+# Create a trustline between the distribution account and the token
 trust_transaction = TransactionBuilder(
     source_account=distribution_account,
     network_passphrase=Network.TESTNET_NETWORK_PASSPHRASE,
@@ -72,7 +72,7 @@ try:
         Payment(
             destination=distribution_keypair.public_key,
             asset=carbon_token,
-            amount="9000"  # Mint 1000 CARBON tokens
+            amount="3000"  # Mint 1000 CARBON tokens
         )
     ).set_timeout(30).build()
 
