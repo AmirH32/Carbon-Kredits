@@ -89,6 +89,20 @@ We chose Stellar for this project because of its unique advantages in creating a
 
 3. Set up your Stellar environment with the **Stellar SDK** to interact with the blockchain.
 
+4. start a virtual python environment 
+
+5. Run the carbon_token.py script to mint carbon credits and check_balance to check the corresponding balance
+
+6. soroban contract invoke \
+    --id CDNQCPILRQOXSYIQKGVECL54FSS3UPP62H3B4IC7UU4G4RTFTDITLJRQ \
+    --network testnet \
+    --source alice \
+    -- \
+    create \
+    --buyer $(stellar keys address alice) \
+    --price_per_token 100 \
+    --total_value 1000
+
 ### Usage
 
 - To mint carbon credit tokens:

@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{contract, contractimpl, contracttype, token, unwrap::UnwrapOptimized, Address, Env, Symbol, Vec};
+use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env, Symbol, Vec, symbol_short}; // Removed unused imports
 
 #[derive(Clone)]
 #[contracttype]
@@ -24,8 +24,8 @@ pub struct CarbonCreditContract;
 impl CarbonCreditContract {
 
     // Event name constants for emitting blockchain events
-    const EVENT_CONTRACT_CREATED: Symbol = Symbol::short("ContractCreated");
-    const EVENT_TOKENS_ASSIGNED: Symbol = Symbol::short("TokensAssigned");
+    const EVENT_CONTRACT_CREATED: Symbol = symbol_short!("CrtCrd"); // Shortened
+    const EVENT_TOKENS_ASSIGNED: Symbol = symbol_short!("TknAsg"); // Shortened
 
     // Creates a contract initiated by the buyer (carbon-positive company)
     pub fn create(
@@ -65,7 +65,7 @@ impl CarbonCreditContract {
     pub fn assign_tokens(
         e: Env,
         seller: Address,
-        token: Address,
+        token: Address,   // Address of the carbon token contract
         token_amount: i128,
     ) {
         // Load the current contract data
@@ -82,7 +82,6 @@ impl CarbonCreditContract {
         let token_client = token::Client::new(&e, &token);
 
         // Burn the tokens from the seller to retire them
-        // Assuming the token has a burn function to retire tokens permanently
         token_client.burn(&seller, &token_amount);
 
         // Update the assigned token amount
