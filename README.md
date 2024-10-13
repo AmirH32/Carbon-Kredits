@@ -103,6 +103,17 @@ We chose Stellar for this project because of its unique advantages in creating a
     --price_per_token 100 \
     --total_value 1000
 
+7. soroban contract invoke \
+    --id CDNQCPILRQOXSYIQKGVECL54FSS3UPP62H3B4IC7UU4G4RTFTDITLJRQ \
+    --network testnet \
+    --source bob \
+    -- \
+    assign_tokens \
+    --seller bob \
+    --token CDNQCPILRQOXSYIQKGVECL54FSS3UPP62H3B4IC7UU4G4RTFTDITLJRQ \
+    --token_amount 100
+
+
 ### Usage
 
 - To mint carbon credit tokens:
