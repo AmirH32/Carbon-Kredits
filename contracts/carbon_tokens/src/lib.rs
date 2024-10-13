@@ -1,11 +1,163 @@
 #![no_std]
 
-use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env, Symbol, Vec, symbol_short}; // Removed unused imports
+use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env, Symbol, Vec, Val, TryFromVal, symbol_short};
+
 
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
+    TokenData,
     ContractData,
+}
+
+pub struct TokenData {
+    pub total_supply: u128,
+    pub balances: Vec<(Address, u128)>,
+}
+
+// Implement TryFromVal for TokenData
+impl TryFromVal<Env, Val> for TokenData {
+    type Error = Err
+    fn try_from_val(env: &Env, val: Val) -> Result<Self, soroban_sdk::Error> {
+        if let Val::Object(obj) = val {
+            let total_supply: u128 = obj.get(&Symbol::from_str("total_supply"))?.try_into_val(env)?;
+            let balances: Vec<(Address, u128)> = obj.get(&Symbol::from_str("balances"))?.try_into_val(env)?;
+            Ok(TokenData { total_supply, balances })
+        } else {
+            Err(soroban_sdk::Error::UnexpectedType)
+        }
+    }
+}
+
+// Implement IntoVal for TokenData
+impl From<TokenData> for Val {
+    fn from(token_data: TokenData) -> Val {
+        let mut obj = Val::object();
+        obj.set(&Symbol::from_str("total_supply"), token_data.total_supply.into());
+        obj.set(&Symbol::from_str("balances"), token_data.balances.into());
+        obj
+    }
+}
+
+#[contract]
+pub struct TokenContract;
+
+#[contractimpl]
+impl TokenContract {
+    const EVENT_TOKENS_MINTED: Symbol = symbol_short!("Minted");
+    const EVENT_TOKENS_TRANSFERRED: Symbol = symbol_short!("Xfered");
+
+    pub fn initialise(e: Env, initial_supply: u128) {
+        let mut token_data = TokenData {
+            total_supply: initial_supply,
+            balances: Vec::new(&e),
+        };
+
+        let caller = e.invoker();
+        Self::mint(e, token_data, caller, initial_supply); // Mutable reference to update state
+        
+        e.storage().instance().set(&DataKey::TokenData, &token_data);
+    }
+
+    pub fn mint(e: Env, token_data: TokenData, recipient: Address, amount: u128) {
+        if amount == 0 {
+            panic!("Cannot mint zero tokens");
+        }
+
+        let mut balances = token_data.balances.clone();
+        let mut total_supply = token_data.total_supply;
+
+        let mut found = false;
+        for (addr, balance) in balances.iter_mut() {
+            if addr == recipient {
+                *balance += amount;
+                found = true;
+                break;
+            }
+        }
+
+        if !found {
+            balances.push((recipient, amount));
+        }
+
+        total_supply += amount;
+
+        let updated_data = TokenData {
+            total_supply,
+            balances,
+        };
+
+        e.storage().instance().set(&DataKey::TokenData, &updated_data);
+
+        e.events().publish(
+            (Self::EVENT_TOKENS_MINTED,),
+            (recipient, amount),
+        );
+    }
+
+    pub fn transfer(e: Env, recipient: Address, amount: u128) {
+        let caller = e.invoker();
+        let mut token_data = load_token_data(&e);
+
+        if amount == 0 {
+            panic!("Cannot transfer zero tokens");
+        }
+
+        let mut caller_balance = 0;
+        for (addr, balance) in token_data.balances.iter_mut() {
+            if addr == caller {
+                caller_balance = *balance;
+                *balance -= amount;
+                break;
+            }
+        }
+
+        if caller_balance < amount {
+            panic!("Insufficient balance");
+        }
+
+        let mut found = false;
+        for (addr, balance) in token_data.balances.iter_mut() {
+            if addr == recipient {
+                *balance += amount;
+                found = true;
+                break;
+            }
+        }
+
+        if !found {
+            token_data.balances.push((recipient, amount));
+        }
+
+        e.storage().instance().set(&DataKey::TokenData, &token_data);
+
+        e.events().publish(
+            (Self::EVENT_TOKENS_TRANSFERRED,),
+            (caller, recipient, amount),
+        );
+    }
+
+    pub fn total_supply(e: Env) -> u128 {
+        let token_data = load_token_data(&e);
+        token_data.total_supply
+    }
+
+    pub fn balance_of(e: Env, address: Address) -> u128 {
+        let token_data = load_token_data(&e);
+        for (addr, balance) in token_data.balances.iter() {
+            if addr == address {
+                return *balance;
+            }
+        }
+        0
+    }
+}
+
+fn load_token_data(e: &Env) -> TokenData {
+    e.storage().instance().get(&DataKey::TokenData).unwrap_or(TokenData {
+        total_supply: 0,
+        balances: Vec::new(&e),
+    })
 }
 
 #[derive(Clone)]

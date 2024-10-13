@@ -1,5 +1,6 @@
 from stellar_sdk import Server, Keypair, Network, TransactionBuilder, Asset, Operation
 from stellar_sdk.operation import Payment 
+
 # Define issuer and distribution keypairs using the provided public and secret keys
 issuing_keypair = Keypair.from_secret("SAU7KGZXJZEYHB22CKF2ADP7BPLLJZRYP4Z43CWBABHTBRQI54KMVEGD")
 distribution_keypair = Keypair.from_secret("SDYMPYU6IKFHKDKKVQJ6SAUYNP6OIBBU7GNFVUOHQCNPSJBT6MNGDHHA")
@@ -31,7 +32,7 @@ except Exception as e:
 trust_transaction = TransactionBuilder(
     source_account=distribution_account,
     network_passphrase=Network.TESTNET_NETWORK_PASSPHRASE,
-    base_fee=100  # 100 stroops (default base fee)
+    base_fee=100  
 ).append_change_trust_op(asset=carbon_token, limit = 10000).set_timeout(30).build()
 
 # Sign and submit the transaction to create the trustline
@@ -49,7 +50,7 @@ try:
     manage_data_transaction = TransactionBuilder(
         source_account=issuer_account,
         network_passphrase=Network.TESTNET_NETWORK_PASSPHRASE,
-        base_fee=100  # Base fee in stroops
+        base_fee=100  
     ).append_manage_data_op(data_name="Issuer", data_value=issuing_keypair.public_key).append_manage_data_op(data_name="Recipient", data_value=distribution_keypair.public_key).set_timeout(30).build()
 
     # Sign and submit the transaction
@@ -63,16 +64,16 @@ except Exception as e:
 try:
     issuing_account = server.load_account(issuing_keypair.public_key)
 
-    # Mint 1000 CARBON tokens from the issuing account to the distribution account
+    # Mint CARBON tokens from the issuing account to the distribution account
     mint_transaction = TransactionBuilder(
         source_account=issuing_account,
         network_passphrase=Network.TESTNET_NETWORK_PASSPHRASE,
-        base_fee=100  # Base fee in stroops
+        base_fee=100 
     ).append_operation(
         Payment(
             destination=distribution_keypair.public_key,
             asset=carbon_token,
-            amount="3000"  # Mint 1000 CARBON tokens
+            amount="3000"  
         )
     ).set_timeout(30).build()
 

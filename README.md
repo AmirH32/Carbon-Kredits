@@ -103,7 +103,10 @@ We chose Stellar for this project because of its unique advantages in creating a
     --price_per_token 100 \
     --total_value 1000
 
-7. soroban contract invoke \
+7. stellar contract deploy --source carol --wasm target/wasm32-unknown-unknown/release/token_contract.wasm --network testnet
+❌ error: reading file target/wasm32-unknown-unknown/release/token_contract.wasm:
+
+8. soroban contract invoke \
     --id CDNQCPILRQOXSYIQKGVECL54FSS3UPP62H3B4IC7UU4G4RTFTDITLJRQ \
     --network testnet \
     --source bob \
@@ -112,6 +115,7 @@ We chose Stellar for this project because of its unique advantages in creating a
     --seller bob \
     --token CDNQCPILRQOXSYIQKGVECL54FSS3UPP62H3B4IC7UU4G4RTFTDITLJRQ \
     --token_amount 100
+
 
 
 ### Usage
